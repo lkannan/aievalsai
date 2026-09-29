@@ -1,0 +1,47 @@
+---
+title: 'Hello, world — the pipeline works'
+description: 'A first test post to confirm the domain, repo, and Cloudflare deploy all work end to end.'
+pubDate: 2026-09-29
+tags: ['meta', 'testing']
+draft: false
+---
+
+import Callout from '../../components/Callout.astro';
+
+This is the first post on **AI Evals AI**. Its only job is to prove the whole
+pipeline works: writing in MDX, committing to GitHub, and having Cloudflare
+build and publish the site automatically. Real content comes next.
+
+<Callout type="info" title="What this post checks">
+  If you can read this box, the RSS feed lists this post, and the deploy went
+  green — the pipeline is working end to end.
+</Callout>
+
+## A code block
+
+Rendering code correctly matters for a blog about testing. Here's a tiny
+example of the kind of thing I'll write about — a trivial assertion:
+
+```js
+function evaluate(output, expected) {
+  return output.trim() === expected.trim();
+}
+
+console.assert(evaluate('  pass  ', 'pass'), 'should ignore surrounding space');
+```
+
+## A small table
+
+Tables are handy for eval results. Here's a throwaway one:
+
+| Check          | Expected | Status |
+| -------------- | -------- | ------ |
+| Domain resolves | yes      | ✅     |
+| HTTPS active    | yes      | ✅     |
+| RSS feed valid  | yes      | ✅     |
+
+## What's next
+
+With the pipeline confirmed, the next posts will get into the actual topics:
+evaluating AI systems, testing agents, and what quality engineering looks like
+when outputs aren't deterministic.

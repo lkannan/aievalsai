@@ -1,0 +1,43 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  pubDate: Date;
+  updatedDate?: Date;
+  tags?: string[];
+}
+
+const { title, description, pubDate, updatedDate, tags = [] } = Astro.props;
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+---
+
+<BaseLayout title={title} description={description} ogType="article">
+  <article>
+    <h1>{title}</h1>
+    <p class="post-meta">
+      <time datetime={pubDate.toISOString()}>{fmt(pubDate)}</time>
+      {updatedDate && <span> &middot; updated {fmt(updatedDate)}</span>}
+      {
+        tags.length > 0 && (
+          <span class="tags">
+            {' '}
+            &middot;{' '}
+            {tags.map((t) => (
+              <span class="tag">{t}</span>
+            ))}
+          </span>
+        )
+      }
+    </p>
+    <slot />
+  </article>
+  <p style="margin-top:2.5rem"><a href="/posts">← All posts</a></p>
+</BaseLayout>

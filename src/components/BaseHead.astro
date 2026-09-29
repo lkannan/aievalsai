@@ -1,0 +1,46 @@
+---
+import { SITE } from '../lib/posts';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Open Graph type: 'website' for pages, 'article' for posts. */
+  ogType?: 'website' | 'article';
+}
+
+const { title, description = SITE.description, ogType = 'website' } = Astro.props;
+
+// Full title: "Page — AI Evals AI", but avoid "AI Evals AI — AI Evals AI" on home.
+const fullTitle = title === SITE.title ? title : `${title} — ${SITE.title}`;
+
+// Canonical URL for this page, resolved against the configured `site`.
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content={Astro.generator} />
+
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonicalURL} />
+
+<!-- Open Graph -->
+<meta property="og:type" content={ogType} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonicalURL} />
+<meta property="og:site_name" content={SITE.title} />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+
+<!-- RSS autodiscovery -->
+<link
+  rel="alternate"
+  type="application/rss+xml"
+  title={SITE.title}
+  href={new URL('rss.xml', Astro.site)}
+/>

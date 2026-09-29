@@ -1,0 +1,38 @@
+---
+// A simple callout box for highlighting notes, tips, or warnings inside MDX.
+// Usage in an .mdx file:
+//   import Callout from '../../components/Callout.astro';
+//   <Callout type="info" title="Heads up">Body text here.</Callout>
+interface Props {
+  type?: 'info' | 'tip' | 'warning';
+  title?: string;
+}
+
+const { type = 'info', title } = Astro.props;
+
+const icon = { info: 'ℹ️', tip: '💡', warning: '⚠️' }[type];
+---
+
+<aside class={`callout callout-${type}`}>
+  {title && <p class="callout-title">{icon} {title}</p>}
+  <div class="callout-body">
+    <slot />
+  </div>
+</aside>
+
+<style>
+  .callout {
+    border-left: 4px solid var(--callout-border);
+    background: var(--callout-bg);
+    padding: 0.9rem 1.1rem;
+    border-radius: 6px;
+    margin: 1.4rem 0;
+  }
+  .callout-title {
+    font-weight: 600;
+    margin: 0 0 0.4rem;
+  }
+  .callout-body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+</style>
