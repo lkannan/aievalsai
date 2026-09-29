@@ -1,0 +1,64 @@
+---
+title: 'What is an eval, really?'
+description: 'A short, practical definition of AI evaluations and why they feel different from ordinary software tests.'
+pubDate: 2026-09-30
+tags: ['evals', 'testing']
+draft: false
+---
+
+import Callout from '../../components/Callout.astro';
+
+If you come from traditional software testing, the word *eval* can be
+confusing. It sounds like a test — and it is — but it behaves differently
+enough that the old instincts mislead you. This is a short attempt to pin the
+term down.
+
+## A working definition
+
+An **eval** is a repeatable way to measure whether an AI system's output is
+good enough for a specific purpose. That's it. The interesting part is hidden
+in two words: *measure* and *good enough*.
+
+<Callout type="tip" title="The core shift">
+  A unit test asks "is this output <em>correct</em>?" — one right answer.
+  An eval asks "is this output <em>good enough</em>?" — a judgment, often on a
+  scale, sometimes made by another model.
+</Callout>
+
+## Why it isn't just a test
+
+Ordinary tests are deterministic: same input, same output, pass or fail. Model
+outputs aren't. Run the same prompt twice and the wording changes. So an eval
+usually measures a *property* of the output rather than checking it against one
+golden string.
+
+| Aspect        | Unit test              | Eval                          |
+| ------------- | ---------------------- | ----------------------------- |
+| Output        | Deterministic          | Variable                      |
+| Pass criteria | Exact match            | Threshold or judgment         |
+| Grader        | Assertion              | Rule, model, or human         |
+| Result        | Pass / fail            | Score, distribution, or rate  |
+
+## A tiny example
+
+A simple eval can still be plain code — a grader that checks a property
+instead of an exact value:
+
+```js
+// "Good enough" here means: mentions the refund window and stays polite.
+function gradeSupportReply(reply) {
+  const mentionsWindow = /\b(30|thirty)[- ]day\b/i.test(reply);
+  const isPolite = !/\b(no way|deal with it|not my problem)\b/i.test(reply);
+  return { pass: mentionsWindow && isPolite, mentionsWindow, isPolite };
+}
+```
+
+Run that over a hundred sample replies and the useful number isn't any single
+pass/fail — it's the *rate*: 92 out of 100 good enough, and here are the 8 that
+weren't.
+
+## What's next
+
+Later posts will get into the harder parts: writing graders that don't lie to
+you, using a model as a judge without fooling yourself, and deciding what
+"good enough" actually means before you start measuring.
