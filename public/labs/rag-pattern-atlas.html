@@ -1,0 +1,704 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>RAG Pattern Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: pattern index on the left, a large blueprint canvas on the right, then "about" and "selected block" side by side */
+:root{
+  --bg:#EDF0F2; --surface:#FFFFFF; --ink:#15202A; --muted:#55626E; --line:#8793A0; --rule:#D3DAE0; --lane:#F5F7F8;
+  --llm:#0D6782; --llm-ink:#FFFFFF; --store:#65489A; --store-tint:#F2EDF9; --gate:#9C5A0C; --gate-tint:#FBF1E2;
+  --agent:#0D6782; --agent-tint:#E2F0F4; --alt:#B0650D; --hi:#C0265A; --hi-tint:#FBE6EE;
+  --font-d:'Instrument Sans','Segoe UI',Arial,sans-serif; --font-m:'JetBrains Mono',Consolas,'Courier New',monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#10171D; --surface:#17212A; --ink:#E4EAEF; --muted:#9BA9B4; --line:#71808C; --rule:#2A3742; --lane:#1B2630;
+  --llm:#3AA3C2; --llm-ink:#081116; --store:#B79CE3; --store-tint:#241D31; --gate:#E2A24C; --gate-tint:#2D2314;
+  --agent:#3AA3C2; --agent-tint:#132D37; --alt:#E2A24C; --hi:#F2709B; --hi-tint:#3A1A27; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#10171D; --surface:#17212A; --ink:#E4EAEF; --muted:#9BA9B4; --line:#71808C; --rule:#2A3742; --lane:#1B2630;
+  --llm:#3AA3C2; --llm-ink:#081116; --store:#B79CE3; --store-tint:#241D31; --gate:#E2A24C; --gate-tint:#2D2314;
+  --agent:#3AA3C2; --agent-tint:#132D37; --alt:#E2A24C; --hi:#F2709B; --hi-tint:#3A1A27; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg); color:var(--ink); font-family:var(--font-d); font-size:15px; line-height:1.5}
+.wrap{max-width:1420px; margin:0 auto; padding-block:28px 48px; padding-inline:clamp(16px,3vw,36px)}
+header.top{display:flex; flex-wrap:wrap; align-items:end; justify-content:space-between; gap:16px 32px; margin-bottom:22px}
+.brand h1{font-size:clamp(26px,3.2vw,36px); font-weight:700; letter-spacing:-0.02em; margin:0; text-wrap:balance}
+.brand p{margin:4px 0 0; color:var(--muted); max-width:62ch}
+.eyebrow{font-family:var(--font-m); font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.tabs{display:flex; gap:4px; background:var(--surface); border:1px solid var(--rule); border-radius:10px; padding:4px}
+.tabs button{font:600 14px var(--font-d); color:var(--muted); background:none; border:0; border-radius:7px; padding:8px 14px; cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink); color:var(--bg)}
+button:focus-visible,.nav a:focus-visible,g.node:focus-visible,select:focus-visible{outline:2px solid var(--hi); outline-offset:2px}
+
+.app{display:grid; grid-template-columns:250px minmax(0,1fr); gap:28px; align-items:start}
+.nav{position:sticky; top:calc(env(safe-area-inset-top,0px) + 16px); display:flex; flex-direction:column; gap:18px}
+.nav h2{margin:0 0 6px}
+.nav ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:1px}
+.nav a{display:flex; justify-content:space-between; gap:8px; text-decoration:none; color:var(--ink); padding:6px 10px; border-radius:6px; font-size:14.5px}
+.nav a:hover{background:var(--surface)}
+.nav a[aria-current="true"]{background:var(--surface); box-shadow:inset 3px 0 0 var(--hi); font-weight:600}
+.nav a span{font-family:var(--font-m); font-size:11px; color:var(--muted); padding-top:3px}
+.picker{display:none}
+.picker select{width:100%; font:500 15px var(--font-d); padding:10px 12px; border-radius:8px; border:1px solid var(--rule); background:var(--surface); color:var(--ink)}
+
+.main{min-width:0; display:flex; flex-direction:column; gap:18px}
+.phead{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:end; gap:14px 24px}
+.phead h2{font-size:clamp(24px,2.6vw,30px); margin:2px 0 4px; letter-spacing:-0.015em; text-wrap:balance}
+.phead p{margin:0; color:var(--muted); max-width:70ch}
+.controls{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
+.btn{font:600 13.5px var(--font-d); border:1px solid var(--rule); background:var(--surface); color:var(--ink); border-radius:8px; padding:8px 12px; cursor:pointer}
+.btn.primary{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.btn:disabled{opacity:.45; cursor:default}
+
+.canvas{background:var(--surface); border:1px solid var(--rule); border-radius:12px; overflow-x:auto}
+.canvas svg{display:block; width:100%; min-width:780px; height:auto}
+.step{min-height:1.5em; font-size:14px; color:var(--muted); display:flex; gap:10px; align-items:baseline; flex-wrap:wrap}
+.step b{color:var(--hi); font-family:var(--font-m); font-weight:500; font-size:12px}
+
+/* diagram marks */
+.lane rect{fill:var(--lane); stroke:var(--rule)}
+.lane text,.col text{font-family:var(--font-m); font-size:10.5px; letter-spacing:.08em; fill:var(--muted); text-transform:uppercase}
+.col rect{fill:none; stroke:var(--rule); stroke-dasharray:3 4}
+.e path{fill:none; stroke:var(--line); stroke-width:1.6}
+.e.dash path{stroke-dasharray:6 5}
+.e.alt path{stroke:var(--alt)}
+.e text{font-family:var(--font-d); font-size:11.5px; fill:var(--muted); paint-order:stroke; stroke:var(--surface); stroke-width:4px; stroke-linejoin:round}
+.e.alt text{fill:var(--alt)}
+g.node{cursor:pointer}
+g.node .shape{stroke-width:1.6}
+.k-io .shape{fill:var(--surface); stroke:var(--ink)}
+.k-proc .shape{fill:var(--surface); stroke:var(--line)}
+.k-store .shape{fill:var(--store-tint); stroke:var(--store)}
+.k-store .lid{fill:none; stroke:var(--store); stroke-width:1.4}
+.k-llm .shape{fill:var(--llm); stroke:var(--llm)}
+.k-gate .shape{fill:var(--gate-tint); stroke:var(--gate)}
+.k-agent .shape{fill:var(--agent-tint); stroke:var(--agent)}
+.k-agent .ring{fill:none; stroke:var(--agent); stroke-width:1}
+.k-band .shape{fill:none; stroke:var(--line); stroke-dasharray:4 4}
+g.node .lbl{font-family:var(--font-d); font-weight:600; font-size:13.5px; fill:var(--ink)}
+g.node .sub{font-family:var(--font-d); font-size:11.5px; fill:var(--muted)}
+.k-llm .lbl{fill:var(--llm-ink)} .k-llm .sub{fill:var(--llm-ink); opacity:.85}
+.k-band .lbl{font-weight:500; fill:var(--muted)}
+g.node:hover .shape{stroke-width:2.4}
+g.node.sel .shape{stroke:var(--hi); stroke-width:2.6}
+svg.tracing g.node,svg.tracing g.e{opacity:.28; transition:opacity .25s}
+svg.tracing g.node.lit,svg.tracing g.e.lit{opacity:1}
+svg.tracing g.e.lit path{stroke:var(--hi); stroke-width:2.4}
+svg.tracing g.node.cur .shape{stroke:var(--hi); stroke-width:3}
+.mk-line{fill:var(--line)} .mk-alt{fill:var(--alt)} .mk-hi{fill:var(--hi)}
+
+.legend{display:flex; flex-wrap:wrap; gap:8px 18px; font-size:12.5px; color:var(--muted)}
+.legend span{display:inline-flex; align-items:center; gap:7px}
+.sw{width:22px; height:14px; border-radius:3px; border:1.6px solid; display:inline-block}
+.ln{width:26px; height:0; border-top:2px solid var(--line); display:inline-block}
+
+.info{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:18px}
+.card{background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:20px 22px; min-width:0}
+.card h3{font-size:16px; margin:0 0 10px}
+dl.facts{display:grid; grid-template-columns:max-content minmax(0,1fr); gap:10px 18px; margin:0}
+dl.facts dt{font-family:var(--font-m); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding-top:3px}
+dl.facts dd{margin:0}
+.sel-kind{font-family:var(--font-m); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--hi)}
+.sel-card p{margin:6px 0 0}
+.empty{color:var(--muted)}
+
+/* tables */
+.tbl{overflow-x:auto; background:var(--surface); border:1px solid var(--rule); border-radius:12px}
+table{border-collapse:collapse; width:100%; min-width:720px; font-size:14px}
+th,td{text-align:left; vertical-align:top; padding:11px 14px; border-bottom:1px solid var(--rule)}
+th{font-family:var(--font-m); font-weight:500; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); background:var(--lane)}
+tr:last-child td{border-bottom:0}
+td a{color:var(--ink); font-weight:600; text-decoration-color:var(--hi); text-underline-offset:3px}
+.note{color:var(--muted); font-size:13.5px; margin:10px 2px 0; max-width:80ch}
+section[hidden]{display:none}
+
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .nav{display:none}
+  .picker{display:block}
+  .info{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="eyebrow">DAXC Patterns Workshop · research map</div>
+      <h1>RAG Pattern Atlas</h1>
+      <p>Block diagrams of the common Retrieval-Augmented Generation architectures. Pick a pattern, click any block for its role, or trace a request through it step by step.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Views">
+      <button role="tab" id="tab-diagrams" aria-selected="true" aria-controls="view-diagrams">Diagrams</button>
+      <button role="tab" id="tab-compare" aria-selected="false" aria-controls="view-compare">Compare paradigms</button>
+      <button role="tab" id="tab-choose" aria-selected="false" aria-controls="view-choose">Choose a pattern</button>
+    </div>
+  </header>
+
+  <section id="view-diagrams" role="tabpanel" aria-labelledby="tab-diagrams">
+    <div class="app">
+      <nav class="nav" id="nav" aria-label="Patterns"></nav>
+      <div class="main">
+        <div class="picker"><label class="eyebrow" for="patternSelect">Pattern</label><select id="patternSelect"></select></div>
+        <div class="phead">
+          <div style="min-width:0">
+            <div class="eyebrow" id="pGroup"></div>
+            <h2 id="pName"></h2>
+            <p id="pSum"></p>
+          </div>
+          <div class="controls">
+            <button class="btn primary" id="playBtn">Trace a request</button>
+            <button class="btn" id="prevBtn" aria-label="Previous step">Back</button>
+            <button class="btn" id="nextBtn" aria-label="Next step">Next</button>
+            <button class="btn" id="resetBtn">Reset</button>
+          </div>
+        </div>
+        <div class="canvas" id="canvas"></div>
+        <div class="step" id="step" aria-live="polite"></div>
+        <div class="legend" aria-label="Legend">
+          <span><i class="sw" style="border-color:var(--ink);background:var(--surface);border-radius:8px"></i>Input / output</span>
+          <span><i class="sw" style="border-color:var(--line);background:var(--surface)"></i>Processing step</span>
+          <span><i class="sw" style="border-color:var(--store);background:var(--store-tint)"></i>Index or data store</span>
+          <span><i class="sw" style="border-color:var(--llm);background:var(--llm)"></i>Model call</span>
+          <span><i class="sw" style="border-color:var(--gate);background:var(--gate-tint)"></i>Decision or check</span>
+          <span><i class="sw" style="border-color:var(--agent);background:var(--agent-tint)"></i>Agent / orchestrator</span>
+          <span><i class="ln"></i>Request path</span>
+          <span><i class="ln" style="border-top-style:dashed"></i>Offline, indexing or skipped</span>
+          <span><i class="ln" style="border-top-color:var(--alt)"></i>Conditional or fallback</span>
+        </div>
+        <div class="info">
+          <div class="card">
+            <h3>About this pattern</h3>
+            <dl class="facts">
+              <dt>Best fit</dt><dd id="pFit"></dd>
+              <dt>Trade-off</dt><dd id="pTrade"></dd>
+              <dt>Watch for</dt><dd id="pWatch"></dd>
+            </dl>
+          </div>
+          <div class="card sel-card" id="selCard">
+            <h3>Selected block</h3>
+            <p class="empty">Click a block in the diagram to see what it does.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-compare" role="tabpanel" aria-labelledby="tab-compare" hidden>
+    <div class="tbl"><table id="cmpTable"></table></div>
+    <p class="note">Ordered roughly by how much control is handed to the model. Moving down the table buys flexibility with latency, cost and variance. Click a name to open its diagram.</p>
+  </section>
+
+  <section id="view-choose" role="tabpanel" aria-labelledby="tab-choose" hidden>
+    <div class="tbl"><table id="chooseTable"></table></div>
+    <p class="note">Real systems combine several of these. A strong enterprise default is modular, routed, hybrid, reranked and provenance-first; agentic loops come in only where a measured quality gain justifies their risk.</p>
+  </section>
+</div>
+
+<script>
+const C=[75,240,405,570,735,900];
+const KIND={io:'Input / output',proc:'Processing step',store:'Index or data store',llm:'Model call',gate:'Decision or check',agent:'Agent / orchestrator',band:'Cross-cutting concern'};
+const P=[
+{id:'reference',g:'Foundation',n:'Reference architecture',
+ sum:'Two planes on different clocks. The knowledge plane turns sources into indexes offline; the query plane retrieves, grounds, generates and verifies on every request.',
+ fit:'The baseline every other pattern modifies. Use it to name which stage a variant changes.',
+ trade:'Many stages to operate, and each needs its own evaluation.',
+ watch:'Treat every index as a rebuildable projection of the sources, and enforce access control at retrieval time, before ranking.',
+ lanes:[[22,118,'Knowledge plane · offline'],[182,278,'Query plane · per request'],[318,392,'Cross-cutting']],
+ nodes:[
+  ['src','io',C[0],70,'Sources','docs · DBs · APIs','Authoritative systems of record. Everything downstream can be rebuilt from here.',110],
+  ['parse','proc',C[1],70,'Parse / OCR','normalize','Extract text, tables and layout. Parser quality puts a ceiling on retrieval quality.'],
+  ['auth','proc',C[2],70,'Authorize + tag','ACL · version · dates','Attach access scope, document version and effective dates so retrieval can filter on them.'],
+  ['chunk','proc',C[3],70,'Chunk + enrich','metadata · summaries','Split by document structure and add metadata, summaries or generated questions.'],
+  ['idx','store',C[4],70,'Indexes','lexical · vector · graph','One or more rebuildable projections of the sources: BM25, dense vectors, a knowledge graph, SQL views.',150],
+  ['user','io',C[0],230,'User','',null,110],
+  ['qu','proc',C[1],230,'Understand + route','rewrite · filters','Turn the request into a standalone query, extract hard filters, and choose sources and depth.',150],
+  ['ret','proc',C[2],230,'Retrieve','one or more retrievers','Query each selected index and return candidate evidence with stable source IDs.'],
+  ['rr','proc',C[3],230,'Fuse + rerank','compress · dedupe','Merge ranked lists, rerank a bounded candidate set, and trim to the token budget without losing provenance.'],
+  ['llm','llm',C[4],230,'LLM','generate from evidence','Writes the answer from the evidence package, citing source IDs.'],
+  ['ver','gate',C[5],230,'Verify + cite','support check','Checks each claim against its cited evidence. Missing support means revise, re-retrieve or abstain.'],
+  ['ans','io',C[5],355,'Answer','or abstain / escalate'],
+  ['cc','band',330,355,'Memory · cache · observability · evals · security · cost','',
+   'Concerns that cut across both planes. Cache keys must include tenant, ACL and corpus version.',560]
+ ],
+ edges:[['src','parse','ingest',{dash:1}],['parse','auth','',{dash:1}],['auth','chunk','',{dash:1}],['chunk','idx','index',{dash:1}],
+  ['user','qu','question'],['qu','ret','query'],['idx','ret','top-k'],['ret','rr',''],['rr','llm','evidence'],['llm','ver','draft'],['ver','ans','']],
+ trace:['src','parse','auth','chunk','idx','user','qu','ret','rr','llm','ver','ans']},
+
+{id:'naive',g:'Paradigms',n:'Naive RAG',
+ sum:'Embed the question, fetch the top-k most similar chunks, paste them into the prompt, and generate once.',
+ fit:'Prototypes, narrow corpora and simple factual questions.',
+ trade:'Fast and simple, but retrieval is brittle and the context is noisy.',
+ watch:'Fixed-size chunks and vector-only search miss exact terms such as product codes, IDs and error numbers.',
+ lanes:[[122,218,'Query · once per request'],[262,358,'Indexing · offline']],
+ nodes:[
+  ['user','io',C[0],170,'User','',null,110],
+  ['qe','proc',C[1],170,'Embed query','same embedding model','The raw question becomes one vector. No rewriting.'],
+  ['vs','proc',C[2],170,'Similarity search','top-k by cosine','Returns the k nearest chunks, relevant or not.'],
+  ['stuff','proc',C[3],170,'Stuff prompt','question + chunks','All retrieved chunks are concatenated into the prompt.'],
+  ['llm','llm',C[4],170,'LLM','one pass'],
+  ['ans','io',C[5],170,'Answer','',null,110],
+  ['docs','io',C[0],310,'Documents','',null,110],
+  ['emb','proc',C[1],310,'Chunk + embed','fixed-size chunks','Split into equal-size pieces and embed each one.'],
+  ['vidx','store',C[2],310,'Vector index','','A single dense index. The only retrieval path.']
+ ],
+ edges:[['docs','emb','',{dash:1}],['emb','vidx','store',{dash:1}],['user','qe','question'],['qe','vs','vector'],['vidx','vs','top-k chunks'],['vs','stuff',''],['stuff','llm','prompt'],['llm','ans','']],
+ trace:['docs','emb','vidx','user','qe','vs','stuff','llm','ans']},
+
+{id:'advanced',g:'Paradigms',n:'Advanced RAG',
+ sum:'Naive RAG plus a pre-retrieval stage that improves the query and a post-retrieval stage that improves the evidence.',
+ fit:'Most production knowledge assistants.',
+ trade:'Better relevance for extra latency and operating cost.',
+ watch:'HyDE output and generated query variants are retrieval keys only. Never cite them as sources.',
+ cols:[[165,315,110,345,'Pre-retrieval'],[330,480,110,345,'Retrieval'],[495,810,110,345,'Post-retrieval'],[825,975,110,345,'Generation']],
+ nodes:[
+  ['user','io',C[0],170,'User','',null,110],
+  ['rw','proc',C[1],170,'Rewrite + expand','HyDE · multi-query','Makes the question standalone, adds synonyms and aliases, or generates several phrasings.'],
+  ['filt','proc',C[1],300,'Extract filters','version · ACL · date','Turns constraints in the question into hard metadata filters applied during retrieval.'],
+  ['hs','proc',C[2],170,'Hybrid search','BM25 + vector','Keyword and semantic search together, so both exact terms and paraphrases are found.'],
+  ['idx','store',C[2],300,'Index','lexical + vector'],
+  ['rr','proc',C[3],170,'Rerank','cross-encoder','A slower, more accurate model rescores the candidates.'],
+  ['cmp','proc',C[4],170,'Compress','filter · dedupe','Drops irrelevant sentences and duplicates while keeping links to the source chunk.'],
+  ['llm','llm',C[5],170,'LLM','cites sources'],
+  ['ans','io',C[5],300,'Answer','',null,110]
+ ],
+ edges:[['user','rw','question'],['user','filt','constraints'],['rw','hs','variants'],['filt','hs','filters'],['idx','hs','candidates'],['hs','rr','top 50'],['rr','cmp','top 8'],['cmp','llm','evidence'],['llm','ans','']],
+ trace:['user','rw','filt','hs','idx','rr','cmp','llm','ans']},
+
+{id:'modular',g:'Paradigms',n:'Modular RAG',
+ sum:'Each stage becomes an independent module with a contract. An orchestrator assembles modules into linear, conditional, branching or looping flows.',
+ fit:'Platforms serving several domains, or requirements that keep changing.',
+ trade:'Flexibility needs clear contracts, orchestration and evaluation discipline.',
+ watch:'Version the module contracts. A silent change in one retriever\'s output breaks every flow that uses it.',
+ nodes:[
+  ['m1','proc',110,70,'Indexing','chunk · embed · graph',null,150],
+  ['m2','proc',315,70,'Pre-retrieval','rewrite · route',null,150],
+  ['m3','proc',520,70,'Retrieval','sparse · dense · SQL',null,150],
+  ['m4','proc',725,70,'Post-retrieval','rerank · compress',null,150],
+  ['m5','proc',930,70,'Generation','prompt · cite · verify',null,150],
+  ['user','io',110,210,'User','',null,120],
+  ['orch','agent',520,210,'Orchestrator','flow graph + contracts','Holds the computation graph: which modules run, in what order, under which conditions.',180],
+  ['ans','io',930,210,'Answer','',null,120],
+  ['f1','proc',250,340,'Linear','fixed sequence','Rewrite → retrieve → rerank → generate, once.'],
+  ['f2','proc',430,340,'Conditional','router picks a path','A rule or classifier chooses among module paths.'],
+  ['f3','proc',610,340,'Branch + fuse','parallel, then merge','Several retrievers run at once and their results are fused.'],
+  ['f4','proc',790,340,'Loop','until evidence is enough','Retrieval and reflection repeat until a stopping rule is met.']
+ ],
+ edges:[['user','orch','request'],['orch','m1',''],['orch','m2',''],['orch','m3','invokes'],['orch','m4',''],['orch','m5',''],['orch','ans','answer'],
+  ['orch','f1','',{dash:1}],['orch','f2','',{dash:1}],['orch','f3','',{dash:1}],['orch','f4','',{dash:1}]],
+ trace:['user','orch','m2','m3','m4','m5','ans']},
+
+{id:'adaptive',g:'Paradigms',n:'Adaptive RAG',
+ sum:'A classifier judges how hard the question is and picks no retrieval, one retrieval pass, or iterative multi-hop retrieval.',
+ fit:'Mixed workloads where simple questions should stay cheap.',
+ trade:'A routing mistake can send a hard question down a path that is too shallow.',
+ watch:'Route conservatively in freshness-sensitive domains; skipping retrieval there returns stale answers.',
+ nodes:[
+  ['user','io',C[0],210,'User','',null,110],
+  ['clf','gate',C[1],210,'Classify complexity','small trained model','Predicts whether the question needs no, one, or several retrieval steps.',160],
+  ['a','proc',C[3],80,'No retrieval','model answers directly'],
+  ['b','proc',C[3],210,'Retrieve once','single step'],
+  ['c','proc',C[3],340,'Iterative retrieval','multi-hop','Retrieve, reason about what is missing, retrieve again.'],
+  ['rs','proc',C[4],340,'Reason','what is missing?'],
+  ['gen','llm',C[5],210,'Generate','',null,120],
+  ['ans','io',C[5],340,'Answer','',null,110]
+ ],
+ edges:[['user','clf','question'],['clf','a','simple',{alt:1}],['clf','b','moderate',{alt:1}],['clf','c','complex',{alt:1}],
+  ['a','gen','direct'],['b','gen','evidence'],['c','rs','evidence'],['rs','c','next query',{bend:70}],['rs','gen','sufficient'],['gen','ans','']],
+ trace:['user','clf','c','rs','c','rs','gen','ans']},
+
+{id:'crag',g:'Paradigms',n:'Corrective RAG (CRAG)',
+ sum:'An evaluator grades the retrieved documents before generation. Good evidence is refined, bad evidence triggers a web search, and uncertain cases use both.',
+ fit:'High-stakes answers where bad retrieval must be caught before it reaches the model.',
+ trade:'The evaluator and fallback searches add cost and latency.',
+ watch:'Web fallback brings in untrusted content: score sources and defend against prompt injection.',
+ nodes:[
+  ['user','io',C[0],200,'User','',null,110],
+  ['ret','proc',C[1],200,'Retrieve','internal top-k'],
+  ['idx','store',C[1],330,'Internal index',''],
+  ['ev','gate',C[2],200,'Retrieval evaluator','grades each document','A lightweight model labels the retrieval as correct, incorrect or ambiguous.',160],
+  ['ref','proc',C[3],90,'Refine','decompose → recompose','Splits documents into strips and keeps only the relevant ones.'],
+  ['web','proc',C[3],310,'Web search','rewritten query','Replaces or supplements internal evidence when it is judged wrong.'],
+  ['gen','llm',C[4],200,'Generate',''],
+  ['ans','io',C[5],200,'Answer','',null,110]
+ ],
+ edges:[['user','ret','question'],['idx','ret','top-k'],['ret','ev','documents'],['ev','ref','correct / ambiguous',{alt:1}],['ev','web','incorrect / ambiguous',{alt:1}],
+  ['ref','gen','refined'],['web','gen','external'],['gen','ans','']],
+ trace:['user','ret','idx','ev','ref','web','gen','ans']},
+
+{id:'selfrag',g:'Paradigms',n:'Self-RAG',
+ sum:'The model itself decides when to retrieve, and critiques both the retrieved passages and its own output using special reflection tokens.',
+ fit:'Tasks that need adaptive grounding and tunable factuality.',
+ trade:'Needs a specially trained model, or a careful approximation with prompting.',
+ watch:'Model self-assessment is not calibrated confidence. Test it against labeled outcomes.',
+ nodes:[
+  ['user','io',C[0],210,'User','',null,110],
+  ['lm','llm',C[1],210,'Self-RAG model','reflection tokens','One model generates text and emits tokens that control retrieval and critique.'],
+  ['dec','gate',C[2],210,'Retrieve?','[Retrieve] token','The model decides per segment whether external evidence is needed.'],
+  ['retr','proc',C[3],80,'Retrieve','on demand'],
+  ['idx','store',C[4],80,'Corpus',''],
+  ['gen','proc',C[3],210,'Generate segments','one per passage',null,150],
+  ['crit','gate',C[3],340,'Critique','ISREL · ISSUP · ISUSE','Is the passage relevant? Does it support the text? Is the output useful? Scores pick the best segment.',160],
+  ['ans','io',C[5],340,'Answer','best-scored text',null,140]
+ ],
+ edges:[['user','lm','prompt'],['lm','dec',''],['dec','retr','yes',{alt:1}],['dec','gen','no',{alt:1}],['idx','retr',''],['retr','gen','passages'],['gen','crit','candidates'],
+  ['crit','ans','best'],['crit','lm','next segment',{via:[300,400]}]],
+ trace:['user','lm','dec','retr','idx','gen','crit','ans']},
+
+{id:'agentic',g:'Paradigms',n:'Agentic RAG',
+ sum:'An agent plans, calls retrieval as one tool among several, reflects on what it found, and loops until a stopping rule is met.',
+ fit:'Research, troubleshooting, multi-hop and cross-system questions.',
+ trade:'Highest variance in latency, cost and output; the hardest to govern.',
+ watch:'Every loop needs a budget: maximum rounds, token and time limits, and a no-new-information check.',
+ nodes:[
+  ['user','io',C[0],210,'User','',null,110],
+  ['agent','agent',C[1],210,'Agent','plan · act · reflect','Decides which tool to call next based on what it has found so far.',160],
+  ['mem','store',C[0],360,'Memory','working · episodic',null,130],
+  ['vec','store',C[3],60,'Vector index',''],
+  ['web','proc',C[3],160,'Web search',''],
+  ['sql','store',C[3],260,'SQL / semantic layer','',null,170],
+  ['api','proc',C[3],360,'APIs · MCP tools',''],
+  ['stop','gate',C[5],210,'Stop?','evidence · budget','Ends the loop when evidence covers the question or a budget runs out.'],
+  ['ans','io',C[5],360,'Answer','',null,110]
+ ],
+ edges:[['user','agent','goal'],['agent','vec','call / observe',{both:1}],['agent','web','',{both:1}],['agent','sql','',{both:1}],['agent','api','',{both:1}],
+  ['agent','mem','',{both:1}],['agent','stop',''],['stop','ans','done'],['stop','agent','not yet: re-plan',{alt:1,via:[570,650]}]],
+ trace:['user','agent','vec','agent','sql','agent','stop','ans']},
+
+{id:'multiagent',g:'Paradigms',n:'Multi-agent RAG',
+ sum:'A supervisor splits the task across specialist agents, each with its own sources. A synthesizer merges their findings and a critic sends gaps back.',
+ fit:'Heterogeneous evidence spread across many systems.',
+ trade:'Coordination and traceability are hard, and shared retrieval errors get amplified.',
+ watch:'Trace every hand-off so a wrong answer can be followed back to the agent and source that caused it.',
+ nodes:[
+  ['user','io',C[0],200,'User','',null,110],
+  ['sup','agent',C[1],200,'Supervisor','decompose · delegate',null,160],
+  ['a1','proc',C[3],50,'Docs agent','vector + BM25'],
+  ['a2','proc',C[3],150,'SQL agent','semantic layer'],
+  ['a3','proc',C[3],250,'Graph agent','entity paths'],
+  ['a4','proc',C[3],350,'Web agent','approved sources'],
+  ['syn','llm',C[4],150,'Synthesizer','merges findings'],
+  ['crit','gate',C[4],300,'Critic','coverage · conflicts','Checks coverage, contradictions and citation support before anything reaches the user.'],
+  ['ans','io',C[5],150,'Answer','',null,110]
+ ],
+ edges:[['user','sup','task'],['sup','a1','delegate'],['sup','a2',''],['sup','a3',''],['sup','a4',''],
+  ['a1','syn','findings'],['a2','syn',''],['a3','syn',''],['a4','syn',''],['syn','crit','draft'],['crit','ans','approved'],
+  ['crit','sup','gaps: re-delegate',{alt:1,via:[480,540]}]],
+ trace:['user','sup','a1','a2','syn','crit','ans']},
+
+{id:'hybrid',g:'Retrieval and index',n:'Hybrid retrieve and rerank',
+ sum:'Run keyword and vector search side by side, merge the ranked lists by rank fusion, then let a slower cross-encoder pick the final few passages.',
+ fit:'Enterprise documentation search. The usual production default.',
+ trade:'Two indexes to maintain and one more model call per query.',
+ watch:'A reranker cannot recover a document that stage 1 missed. Measure recall and precision separately.',
+ cols:[[165,645,30,370,'Stage 1 · recall'],[660,975,30,370,'Stage 2 · precision']],
+ nodes:[
+  ['user','io',C[0],200,'Query','',null,110],
+  ['qf','proc',C[1],200,'Normalize + filter','ACL · version',null,150],
+  ['bm','store',C[2],90,'Lexical index','BM25 · exact IDs','Strong on names, codes, rare tokens and quoted phrases.'],
+  ['vec','store',C[2],310,'Vector index','dense · paraphrase','Strong on meaning and paraphrase; weak on exact identifiers.'],
+  ['rrf','proc',C[3],200,'Rank fusion','RRF → top 100','Merges by rank position, so incomparable score scales do not matter.'],
+  ['rr','proc',C[4],200,'Rerank','cross-encoder → top 8','Scores each query–passage pair jointly. Slower, much more precise.'],
+  ['llm','llm',C[5],200,'Generate','cites chunk IDs']
+ ],
+ edges:[['user','qf',''],['qf','bm','keywords'],['qf','vec','embedding'],['bm','rrf','ranked list'],['vec','rrf','ranked list'],['rrf','rr','candidates'],['rr','llm','evidence']],
+ trace:['user','qf','bm','vec','rrf','rr','llm']},
+
+{id:'parentchild',g:'Retrieval and index',n:'Parent-child (Small2Big)',
+ sum:'Search over small chunks for precise matching, then hand the model the larger parent section each match came from.',
+ fit:'Long manuals, policies and specs where the context around a match matters.',
+ trade:'More storage and a mapping to maintain; larger prompts.',
+ watch:'Keep table headers and section titles with the parent so the expanded context stays readable.',
+ lanes:[[30,120,'Indexing · offline'],[240,330,'Query']],
+ nodes:[
+  ['doc','io',C[0],80,'Document','',null,110],
+  ['par','store',C[1],80,'Parent sections','large, stored whole','Best granularity for understanding.'],
+  ['chi','store',C[2],80,'Child chunks','small, embedded','Best granularity for finding. Each keeps its parent_id.'],
+  ['q','io',C[0],280,'Query','',null,110],
+  ['sc','proc',C[2],280,'Search children','precise match'],
+  ['map','proc',C[3],280,'Expand to parent','child → parent_id',null,150],
+  ['llm','llm',C[4],280,'LLM','reads full section']
+ ],
+ edges:[['doc','par','split',{dash:1}],['par','chi','split + embed',{dash:1}],['q','sc','embed'],['chi','sc','match'],['sc','map','hits'],['par','map','fetch parent'],['map','llm','sections']],
+ trace:['doc','par','chi','q','sc','map','llm']},
+
+{id:'graph',g:'Retrieval and index',n:'Graph RAG',
+ sum:'An LLM extracts entities and relations into a knowledge graph. Local questions expand a neighborhood; global questions map-reduce over community summaries.',
+ fit:'Relationship questions, investigations and corpus-wide themes.',
+ trade:'Graph extraction is expensive, and extraction errors become retrieval errors.',
+ watch:'Pair it with vector search for semantic entry points. Graph-only retrieval misses loosely worded questions.',
+ lanes:[[22,118,'Indexing · offline'],[182,440,'Query']],
+ nodes:[
+  ['docs','io',C[0],70,'Documents','',null,110],
+  ['ext','llm',C[1],70,'Extract','entities + relations'],
+  ['kg','store',C[2],70,'Knowledge graph',''],
+  ['com','proc',C[3],70,'Communities','hierarchical clusters'],
+  ['sums','store',C[4],70,'Community summaries','LLM-written',null,170],
+  ['q','io',C[0],250,'Query','',null,110],
+  ['rt','gate',C[1],250,'Local or global?','',null,150],
+  ['loc','proc',C[2],250,'Entity match','expand neighbors','Finds the entities in the question and walks their relationships.'],
+  ['syn','llm',C[4],250,'Synthesize',''],
+  ['glob','proc',C[5],400,'Map per community','partial answers','Each community summary answers the question; the partial answers are reduced into one.',160],
+  ['ans','io',C[5],250,'Answer','',null,110]
+ ],
+ edges:[['docs','ext','',{dash:1}],['ext','kg','',{dash:1}],['kg','com','',{dash:1}],['com','sums','summarize',{dash:1}],
+  ['q','rt',''],['rt','loc','local',{alt:1}],['rt','glob','global: corpus themes',{alt:1}],['kg','loc','neighbors'],['sums','glob','map'],
+  ['loc','syn','subgraph + text'],['glob','syn','reduce'],['syn','ans','']],
+ trace:['docs','ext','kg','com','sums','q','rt','loc','syn','ans']},
+
+{id:'sql',g:'Retrieval and index',n:'Structured / Text-to-SQL RAG',
+ sum:'Retrieve the relevant schema and examples, generate SQL, validate it, run it read-only, and answer from the returned rows.',
+ fit:'Exact metrics, aggregations and operational records.',
+ trade:'Generated queries can be wrong in subtle ways that still execute.',
+ watch:'Enforce read-only access and an allow-list of tables, and show the query alongside the answer.',
+ nodes:[
+  ['user','io',C[0],200,'User','',null,110],
+  ['sch','proc',C[1],200,'Retrieve schema','tables · examples'],
+  ['cat','store',C[1],330,'Schema catalog','semantic layer','Governed definitions of measures, dimensions and joins.'],
+  ['gen','llm',C[2],200,'Text-to-SQL',''],
+  ['val','gate',C[3],200,'Validate','read-only · allow-list','Parses the SQL and rejects writes, unknown tables and unbounded scans.'],
+  ['db','store',C[3],330,'Governed DB',''],
+  ['gr','llm',C[4],200,'Answer from rows','',null,150],
+  ['ans','io',C[5],200,'Answer','with query shown',null,130]
+ ],
+ edges:[['user','sch','question'],['cat','sch','schema'],['sch','gen','context'],['gen','val','SQL'],['val','gen','error → retry',{alt:1,via:[487,300]}],
+  ['val','db','execute'],['db','gr','rows'],['gr','ans','']],
+ trace:['user','sch','cat','gen','val','db','gr','ans']},
+
+{id:'multimodal',g:'Retrieval and index',n:'Multimodal RAG',
+ sum:'Parse pages into text, tables and images, index each in a suitable form, retrieve across modalities, and give a vision-language model the original assets.',
+ fit:'Visually rich PDFs, slides, diagrams, charts and video.',
+ trade:'More parsers, indexes and model cost; text-only evaluation misses visual failures.',
+ watch:'Keep a link from every caption or summary back to the original asset.',
+ nodes:[
+  ['src','io',C[0],210,'PDF · slides','',null,120],
+  ['lay','proc',C[1],210,'Layout parse','pages → elements'],
+  ['txt','proc',C[2],80,'Text blocks','structure-aware'],
+  ['tab','proc',C[2],210,'Tables','markdown + summary'],
+  ['img','proc',C[2],340,'Images · charts','caption + vector'],
+  ['tidx','store',C[3],140,'Text index',''],
+  ['midx','store',C[3],290,'Multimodal index','shared embedding','Text and images in one vector space, so a text query can find a chart.',150],
+  ['raw','store',C[3],420,'Raw assets','originals kept'],
+  ['q','io',C[4],80,'Query','',null,110],
+  ['ret','proc',C[4],220,'Retrieve + rerank','across modalities',null,150],
+  ['vlm','llm',C[5],220,'VLM','sees originals',null,120]
+ ],
+ edges:[['src','lay','',{dash:1}],['lay','txt','',{dash:1}],['lay','tab','',{dash:1}],['lay','img','',{dash:1}],['txt','tidx','',{dash:1}],['tab','tidx','',{dash:1}],
+  ['img','midx','',{dash:1}],['img','raw','',{dash:1}],['q','ret',''],['tidx','ret',''],['midx','ret',''],['ret','vlm','evidence'],['raw','vlm','original image']],
+ trace:['src','lay','tab','img','tidx','midx','raw','q','ret','vlm']},
+
+{id:'federated',g:'Retrieval and index',n:'Federated RAG',
+ sum:'Indexes stay inside each organizational silo. A router picks the relevant silos per query, and their results are merged and reranked centrally.',
+ fit:'Data sovereignty and decentralized business units.',
+ trade:'Ranking across silos and consistent access policy are hard.',
+ watch:'Do not copy sensitive data into one central index by default; route the query to the data instead.',
+ nodes:[
+  ['user','io',C[0],210,'User','',null,110],
+  ['rt','gate',C[1],210,'Select sources','per-query router','Learns or rules which silos are likely to hold the answer, so not every silo is queried.',150],
+  ['s1','store',425,80,'HR silo','local index + ACL',null,160],
+  ['s2','store',425,210,'Finance silo','local index + ACL',null,160],
+  ['s3','store',425,340,'Engineering silo','local index + ACL',null,160],
+  ['fuse','proc',C[4],210,'Merge + rerank','rank fusion'],
+  ['llm','llm',C[5],210,'Generate','cites each silo']
+ ],
+ edges:[['user','rt','question'],['rt','s1','HR scope'],['rt','s2','finance scope'],['rt','s3','skipped',{dash:1,alt:1}],['s1','fuse','hits'],['s2','fuse','hits'],['fuse','llm','evidence']],
+ trace:['user','rt','s1','s2','fuse','llm']},
+
+{id:'memory',g:'State',n:'Conversational memory',
+ sum:'Rewrite each turn into a standalone query, retrieve authoritative knowledge and user memory separately, and write new memories only through a validation gate.',
+ fit:'Assistants that hold multi-turn conversations and remember users over time.',
+ trade:'Memory adds scope, retention and privacy obligations.',
+ watch:'Memory must never override authoritative facts without an explicit precedence rule.',
+ nodes:[
+  ['user','io',C[0],200,'User turn','',null,120],
+  ['hist','store',C[0],340,'Recent turns','',null,130],
+  ['rw','proc',C[1],200,'Rewrite','standalone query','"What about its licensing?" becomes a full question using recent turns.'],
+  ['kr','proc',C[2],80,'Knowledge retrieval','authoritative docs',null,160],
+  ['mr','proc',C[2],320,'Memory retrieval','scoped to this user',null,160],
+  ['asm','proc',C[3],200,'Assemble','facts outrank memory','Combines both, applying separate trust and access rules.'],
+  ['llm','llm',C[4],200,'LLM',''],
+  ['ans','io',C[5],200,'Answer','',null,110],
+  ['ms','store',C[3],400,'Long-term memory','typed, with retention',null,150],
+  ['wg','gate',C[4],400,'Write gate','validate · scope','Only validated, correctly scoped facts become future context.']
+ ],
+ edges:[['user','rw',''],['hist','rw','context'],['rw','kr',''],['rw','mr',''],['ms','mr','recall'],['kr','asm','facts'],['mr','asm','memories'],['asm','llm',''],['llm','ans',''],
+  ['llm','wg','candidate facts',{dash:1}],['wg','ms','store',{dash:1}]],
+ trace:['user','hist','rw','kr','mr','ms','asm','llm','ans','wg','ms']}
+];
+
+const CMP=[
+ ['naive','Retrieve top-k once, add to prompt, generate once','Prototypes, narrow corpora, simple factual Q&A','Simple and fast; brittle retrieval, noisy context'],
+ ['advanced','Adds query optimization before retrieval and reranking, filtering or compression after','Most production knowledge assistants','Better relevance for extra latency and cost'],
+ ['modular','Independent modules assembled into a configurable flow graph','Multiple domains, changing requirements, shared platforms','Needs contracts, orchestration and evaluation discipline'],
+ ['adaptive','Classifies complexity; picks no, single or iterative retrieval','Mixed workloads where easy questions must stay cheap','Routing errors can pick too shallow a path'],
+ ['crag','Grades retrieved evidence; refines it, supplements it, or falls back','High-stakes systems that must detect bad retrieval','Evaluator and fallback add cost and latency'],
+ ['selfrag','Model decides when to retrieve and critiques evidence and output','Adaptive grounding, controllable factuality','Needs specialized training or careful approximation'],
+ ['agentic','Agent plans, calls retrieval as a tool, reflects, iterates','Research, troubleshooting, multi-hop, cross-system work','Highest variance, latency, cost and governance burden'],
+ ['multiagent','Planner, retriever, critic and synthesizer agents collaborate','Complex, heterogeneous evidence','Coordination and traceability are difficult']
+];
+const CHOOSE=[
+ ['Narrow internal FAQ','naive','Naive RAG with structure-aware chunks','Metadata filters and a reranker','Multi-agent orchestration'],
+ ['Enterprise documentation search','hybrid','Hybrid retrieval, reranking, parent expansion','Query rewrite, citation checks, version filters','Vector-only retrieval'],
+ ['Exact business metrics','sql','Router plus semantic-layer or SQL RAG','Document retrieval for definitions','Embedding rows as the only numeric source'],
+ ['Long manuals or policies','parentchild','Parent-child or hierarchical RAG','Tree summaries and neighbor retrieval','Only tiny independent chunks'],
+ ['Connected entities, multi-hop','graph','Vector plus graph RAG','Iterative retrieval and path validation','Graph-only retrieval'],
+ ['Visually rich PDFs','multimodal','Multimodal RAG keeping layout, tables, images','Cross-modal reranking, VLM verification','OCR to plain text as the only form'],
+ ['Fresh external information','crag','Live web or API retrieval with source scoring','Corrective fallback, time constraints','A stale persistent index'],
+ ['Complex research','agentic','Planner-executor or researcher-critic agentic RAG','Specialist agents, coverage-based loops','Unbounded autonomous loops'],
+ ['Conversational assistant','memory','History-aware rewrite and short-term state','Typed long-term memory with validated writes','Embedding the whole transcript each turn'],
+ ['Regulated knowledge','reference','Hybrid retrieve-rerank, hard ACL filters, citations, abstention','Human approval, claim-level verification','Model self-confidence as the only control'],
+ ['Distributed business units','federated','Federated routing with local authorization','Central fusion or local generation','Copying all sensitive data into one index']
+];
+
+const NS='http://www.w3.org/2000/svg';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+let cur=null, nodeMap={}, step=-1, timer=null;
+
+function nodeObj(a){return {id:a[0],k:a[1],x:a[2],y:a[3],t:a[4],s:a[5]||'',d:a[6]||null,w:a[7]||(a[1]==='io'?120:140),h:a[1]==='band'?44:56}}
+
+function anchor(n,tx,ty,gap){
+  const dx=tx-n.x, dy=ty-n.y; if(!dx&&!dy) return [n.x,n.y];
+  const hw=n.w/2+gap, hh=n.h/2+gap;
+  const t=Math.min(dx?hw/Math.abs(dx):Infinity, dy?hh/Math.abs(dy):Infinity);
+  return [n.x+dx*t, n.y+dy*t];
+}
+
+function shape(n){
+  const x=n.x-n.w/2, y=n.y-n.h/2, w=n.w, h=n.h;
+  if(n.k==='io') return `<rect class="shape" x="${x}" y="${y}" width="${w}" height="${h}" rx="${h/2}"/>`;
+  if(n.k==='gate'){const i=12;return `<polygon class="shape" points="${x+i},${y} ${x+w-i},${y} ${x+w},${n.y} ${x+w-i},${y+h} ${x+i},${y+h} ${x},${n.y}"/>`}
+  if(n.k==='store') return `<rect class="shape" x="${x}" y="${y}" width="${w}" height="${h}" rx="6"/><path class="lid" d="M${x} ${y+9} Q${n.x} ${y+19} ${x+w} ${y+9}"/>`;
+  if(n.k==='agent') return `<rect class="shape" x="${x}" y="${y}" width="${w}" height="${h}" rx="8"/><rect class="ring" x="${x+4}" y="${y+4}" width="${w-8}" height="${h-8}" rx="5"/>`;
+  return `<rect class="shape" x="${x}" y="${y}" width="${w}" height="${h}" rx="6"/>`;
+}
+
+function render(p){
+  nodeMap={}; p.nodes.map(nodeObj).forEach(n=>nodeMap[n.id]=n);
+  const ns=Object.values(nodeMap);
+  let minY=Math.min(...ns.map(n=>n.y-n.h/2))-44, maxY=Math.max(...ns.map(n=>n.y+n.h/2))+24;
+  (p.lanes||[]).forEach(l=>{minY=Math.min(minY,l[0]-8);maxY=Math.max(maxY,l[1]+8)});
+  (p.cols||[]).forEach(c=>{minY=Math.min(minY,c[2]-8);maxY=Math.max(maxY,c[3]+8)});
+  p.edges.forEach(e=>{const o=e[3]||{}; if(o.via){const a=nodeMap[e[0]],b=nodeMap[e[1]]; maxY=Math.max(maxY,0.5*o.via[1]+0.25*(a.y+b.y)+24)}});
+  const H=maxY-minY;
+  let s=`<svg viewBox="0 ${minY} 1040 ${H}" role="img" aria-label="${esc(p.n)}: block diagram. ${esc(p.sum)}"><defs>
+   <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-line" d="M0 0L10 5L0 10z"/></marker>
+   <marker id="ar-alt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-alt" d="M0 0L10 5L0 10z"/></marker>
+   <marker id="ar-hi" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-hi" d="M0 0L10 5L0 10z"/></marker></defs>`;
+  (p.lanes||[]).forEach(l=>{s+=`<g class="lane"><rect x="8" y="${l[0]}" width="1024" height="${l[1]-l[0]}" rx="8"/><text x="20" y="${l[1]-9}">${esc(l[2])}</text></g>`});
+  (p.cols||[]).forEach(c=>{s+=`<g class="col"><rect x="${c[0]}" y="${c[2]}" width="${c[1]-c[0]}" height="${c[3]-c[2]}" rx="8"/><text x="${c[0]+10}" y="${c[3]-10}">${esc(c[4])}</text></g>`});
+  p.edges.forEach((e,i)=>{
+    const a=nodeMap[e[0]], b=nodeMap[e[1]], o=e[3]||{};
+    let ctrl=null;
+    if(o.via) ctrl=o.via;
+    else if(o.bend){const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy);ctrl=[mx-dy/L*o.bend*2,my+dx/L*o.bend*2]}
+    const p0=anchor(a,ctrl?ctrl[0]:b.x,ctrl?ctrl[1]:b.y,o.both?7:3), p1=anchor(b,ctrl?ctrl[0]:a.x,ctrl?ctrl[1]:a.y,7);
+    let d,lx,ly;
+    if(ctrl){d=`M${p0[0]} ${p0[1]} Q${ctrl[0]} ${ctrl[1]} ${p1[0]} ${p1[1]}`;lx=.25*p0[0]+.5*ctrl[0]+.25*p1[0];ly=.25*p0[1]+.5*ctrl[1]+.25*p1[1]+4}
+    else{d=`M${p0[0]} ${p0[1]} L${p1[0]} ${p1[1]}`;lx=(p0[0]+p1[0])/2;ly=(p0[1]+p1[1])/2+4;
+      if(Math.abs(p0[1]-p1[1])<2){const gap=Math.abs(p1[0]-p0[0]), lw=(e[2]||'').length*6.3+8; ly=lw<gap?p0[1]-8:p0[1]-35;}}
+    const mk=o.alt?'ar-alt':'ar';
+    s+=`<g class="e${o.dash?' dash':''}${o.alt?' alt':''}" data-i="${i}" data-mk="${mk}"><path d="${d}" marker-end="url(#${mk})"${o.both?` marker-start="url(#${mk})"`:''}/>${e[2]?`<text x="${lx}" y="${ly}" text-anchor="middle">${esc(e[2])}</text>`:''}</g>`;
+  });
+  ns.forEach(n=>{
+    const ty=n.s?n.y-4:n.y+5;
+    s+=`<g class="node k-${n.k}" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.t)}${n.s?', '+esc(n.s):''}">${shape(n)}<text class="lbl" x="${n.x}" y="${ty}" text-anchor="middle">${esc(n.t)}</text>${n.s?`<text class="sub" x="${n.x}" y="${n.y+14}" text-anchor="middle">${esc(n.s)}</text>`:''}</g>`;
+  });
+  s+='</svg>';
+  $('#canvas').innerHTML=s;
+  $('#canvas').querySelectorAll('g.node').forEach(g=>{
+    g.addEventListener('click',()=>select(g.dataset.id));
+    g.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();select(g.dataset.id)}});
+  });
+}
+
+function select(id){
+  const n=nodeMap[id]; if(!n) return;
+  $('#canvas').querySelectorAll('g.node').forEach(g=>g.classList.toggle('sel',g.dataset.id===id));
+  const ins=cur.edges.filter(e=>e[1]===id||((e[3]||{}).both&&e[0]===id)).map(e=>nodeMap[e[1]===id?e[0]:e[1]].t);
+  const outs=cur.edges.filter(e=>e[0]===id||((e[3]||{}).both&&e[1]===id)).map(e=>nodeMap[e[0]===id?e[1]:e[0]].t);
+  $('#selCard').innerHTML=`<h3>${esc(n.t)}</h3><div class="sel-kind">${KIND[n.k]}</div>
+   <p>${esc(n.d||(n.s?n.s.charAt(0).toUpperCase()+n.s.slice(1)+'.':'A boundary of the system.'))}</p>
+   ${ins.length?`<p class="empty">Receives from: ${esc([...new Set(ins)].join(', '))}</p>`:''}
+   ${outs.length?`<p class="empty">Sends to: ${esc([...new Set(outs)].join(', '))}</p>`:''}`;
+}
+
+function applyStep(){
+  const svg=$('#canvas svg'); if(!svg) return;
+  const tr=cur.trace;
+  svg.classList.toggle('tracing',step>=0);
+  const lit=new Set(tr.slice(0,step+1));
+  svg.querySelectorAll('g.node').forEach(g=>{g.classList.toggle('lit',lit.has(g.dataset.id));g.classList.toggle('cur',step>=0&&g.dataset.id===tr[step])});
+  const pairs=new Set(); for(let i=1;i<=step;i++){pairs.add(tr[i-1]+'>'+tr[i])}
+  svg.querySelectorAll('g.e').forEach(g=>{
+    const e=cur.edges[+g.dataset.i], o=e[3]||{};
+    const on=pairs.has(e[0]+'>'+e[1])||(o.both&&pairs.has(e[1]+'>'+e[0]));
+    g.classList.toggle('lit',on);
+    const path=g.querySelector('path'), mk=on?'ar-hi':g.dataset.mk;
+    path.setAttribute('marker-end',`url(#${mk})`); if(o.both) path.setAttribute('marker-start',`url(#${mk})`);
+  });
+  const el=$('#step');
+  if(step<0){el.innerHTML='Press <b>Trace a request</b> to walk through the flow one block at a time.'}
+  else{const n=nodeMap[tr[step]];el.innerHTML=`<b>STEP ${step+1} / ${tr.length}</b><span><strong>${esc(n.t)}</strong> · ${esc(n.d||n.s||KIND[n.k])}</span>`}
+  $('#prevBtn').disabled=step<=0; $('#nextBtn').disabled=step>=tr.length-1;
+}
+function stopPlay(){if(timer){clearInterval(timer);timer=null}$('#playBtn').textContent='Trace a request'}
+$('#playBtn').addEventListener('click',()=>{
+  if(timer){stopPlay();return}
+  if(step>=cur.trace.length-1) step=-1;
+  step++; applyStep(); $('#playBtn').textContent='Pause';
+  timer=setInterval(()=>{if(step>=cur.trace.length-1){stopPlay();return}step++;applyStep()},1300);
+});
+$('#nextBtn').addEventListener('click',()=>{stopPlay();if(step<cur.trace.length-1){step++;applyStep()}});
+$('#prevBtn').addEventListener('click',()=>{stopPlay();if(step>0){step--;applyStep()}});
+$('#resetBtn').addEventListener('click',()=>{stopPlay();step=-1;applyStep()});
+
+function show(id,push){
+  const p=P.find(x=>x.id===id)||P[0]; cur=p; stopPlay(); step=-1;
+  $('#pGroup').textContent=p.g; $('#pName').textContent=p.n; $('#pSum').textContent=p.sum;
+  $('#pFit').textContent=p.fit; $('#pTrade').textContent=p.trade; $('#pWatch').textContent=p.watch;
+  $('#selCard').innerHTML='<h3>Selected block</h3><p class="empty">Click a block in the diagram to see what it does.</p>';
+  render(p); applyStep();
+  document.querySelectorAll('.nav a').forEach(a=>a.setAttribute('aria-current',a.dataset.id===p.id?'true':'false'));
+  $('#patternSelect').value=p.id;
+  if(push){try{history.replaceState(null,'','#'+p.id)}catch(e){}}
+  try{localStorage.setItem('rag-atlas-last',p.id)}catch(e){}
+}
+
+// navigation
+(function(){
+  const groups=[...new Set(P.map(p=>p.g))]; let html='', opts='';
+  groups.forEach(g=>{
+    const items=P.filter(p=>p.g===g);
+    html+=`<div><h2 class="eyebrow">${esc(g)}</h2><ul>${items.map(p=>`<li><a href="#${p.id}" data-id="${p.id}">${esc(p.n)}<span>${p.nodes.length}</span></a></li>`).join('')}</ul></div>`;
+    opts+=`<optgroup label="${esc(g)}">${items.map(p=>`<option value="${p.id}">${esc(p.n)}</option>`).join('')}</optgroup>`;
+  });
+  $('#nav').innerHTML=html; $('#patternSelect').innerHTML=opts;
+  $('#nav').addEventListener('click',ev=>{const a=ev.target.closest('a');if(!a)return;ev.preventDefault();show(a.dataset.id,true)});
+  $('#patternSelect').addEventListener('change',ev=>show(ev.target.value,true));
+})();
+
+// tables
+function link(id,label){return `<a href="#${id}" data-go="${id}">${esc(label)}</a>`}
+$('#cmpTable').innerHTML='<tr><th style="width:18%">Pattern</th><th style="width:30%">Core shape</th><th style="width:26%">Best fit</th><th>Main trade-off</th></tr>'+
+  CMP.map(r=>{const p=P.find(x=>x.id===r[0]);return `<tr><td>${link(r[0],p.n)}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td></tr>`}).join('');
+$('#chooseTable').innerHTML='<tr><th style="width:19%">If you need</th><th style="width:21%">Diagram</th><th style="width:22%">Start with</th><th style="width:20%">Add when needed</th><th>Avoid as a first move</th></tr>'+
+  CHOOSE.map(r=>{const p=P.find(x=>x.id===r[1]);return `<tr><td><strong>${esc(r[0])}</strong></td><td>${link(r[1],p.n)}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`}).join('');
+document.addEventListener('click',ev=>{const a=ev.target.closest('[data-go]');if(!a)return;ev.preventDefault();setTab('diagrams');show(a.dataset.go,true);window.scrollTo({top:0,behavior:'smooth'})});
+
+// tabs
+function setTab(name){
+  ['diagrams','compare','choose'].forEach(t=>{$('#tab-'+t).setAttribute('aria-selected',t===name?'true':'false');$('#view-'+t).hidden=t!==name});
+  if(name!=='diagrams') stopPlay();
+}
+['diagrams','compare','choose'].forEach(t=>$('#tab-'+t).addEventListener('click',()=>setTab(t)));
+
+// start
+let start=(location.hash||'').slice(1);
+if(!P.some(p=>p.id===start)){try{start=localStorage.getItem('rag-atlas-last')||''}catch(e){start=''}}
+show(P.some(p=>p.id===start)?start:'reference',false);
+</script>
+
+</body></html>

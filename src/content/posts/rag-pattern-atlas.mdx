@@ -1,0 +1,42 @@
+---
+title: 'A visual atlas of RAG patterns'
+description: 'An interactive map of retrieval-augmented generation patterns — embedded here, and available full screen in Labs.'
+pubDate: 2026-09-30
+tags: ['rag', 'evals']
+draft: false
+---
+
+import Callout from '../../components/Callout.astro';
+
+When I was working through **retrieval-augmented generation (RAG)**, the hardest
+part wasn't any single technique — it was seeing how the pieces fit together.
+Naive retrieval, re-ranking, query rewriting, agentic loops: each makes sense on
+its own, but the *relationships* between them are what took a diagram to
+understand. So I built one.
+
+<Callout type="tip" title="Two ways to view it">
+  The interactive atlas is embedded below. It's a full-screen document by
+  design, so for the best experience open it on its own:
+  <a href="/labs/rag-pattern-atlas.html">open the RAG Pattern Atlas full screen →</a>
+</Callout>
+
+<iframe
+  src="/labs/rag-pattern-atlas.html"
+  title="RAG Pattern Atlas"
+  loading="lazy"
+  style="width: 100%; height: 80vh; border: 1px solid var(--rule, #ccc); border-radius: 8px;"
+></iframe>
+
+## What it covers
+
+The atlas lays out the common RAG building blocks — stores, gates, LLM calls,
+agentic steps — and how they compose into recognizable patterns. Click a block
+to see what it does and where it fits.
+
+## Why this lives in "Labs"
+
+These interactive documents come out of my learning sessions: each one is a
+self-contained simulation or map for a concept I was trying to understand. They
+live under [Labs](/labs) rather than as ordinary posts, because they're meant to
+be *used*, not just read. This post is the written companion — the atlas itself
+is the artifact.

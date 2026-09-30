@@ -59,6 +59,27 @@ Set `draft: true` in frontmatter. Draft posts are:
 
 Draft filtering lives in one place: `src/lib/posts.ts` (`getPublishedPosts`).
 
+## Labs (interactive HTML documents)
+
+Self-contained interactive HTML files (simulations, maps, explainers) are
+served verbatim from `public/labs/` and listed on the `/labs` page.
+
+**To add one:**
+
+1. Drop the `.html` file into `public/labs/` with a clean kebab-case name,
+   e.g. `public/labs/my-concept.html`. It's served as-is at
+   `/labs/my-concept.html` (no processing — raw HTML stays exactly as
+   generated).
+2. Add an entry to the `labs` array in `src/pages/labs/index.astro`
+   (title, description, file, date).
+3. Optionally write a companion blog post that embeds it in an `<iframe>`
+   and links to the full-screen version (see
+   `src/content/posts/rag-pattern-atlas.mdx` for the pattern).
+
+Keep each file self-contained (inline CSS/JS; external CDN links are fine
+over HTTPS). Nothing about an employer, internal projects, or unreleased
+products.
+
 ## Deployment
 
 Deployed via **Cloudflare Pages**, Git-integrated:
